@@ -49,8 +49,10 @@
 
   <div id="view-calendar" class="container">
     <div class="legend">
-      <strong>Memória: IndexedDB (Alta Capacidade)</strong>
-      <p>🔵 Azul: Hoje | 🟢 Verde: Completo | 🟡 Amarelo: Pendente</p>
+      <strong>Legenda:</strong>
+      <p>🔵 Azul: Hoje</p>
+      <p>🟢 Verde: Completo</p>
+      <p>🟡 Amarelo: Pendente</p>
       <button class="dark-mode-btn" onclick="toggleTheme()">Alternar Tema</button>
     </div>
 
@@ -62,6 +64,9 @@
 
     <div class="calendar-grid" id="calendar-days"></div>
     <button class="btn-action btn-danger" onclick="clearData()">🗑️ Limpar Mês e Fotos</button>
+    <button id="installApp" style="display: none; margin-top: 10px; background-color: #25d366; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+    📲 Instalar App
+</button>
   </div>
 
   <div id="view-checkin" class="container hidden">
@@ -276,5 +281,34 @@
     function changeCurrentPhoto() { closeModal(); document.getElementById('camera-input').click(); }
     function toggleInfo() { document.getElementById('info-modal').classList.toggle('hidden'); }
   </script>
+  <script>
+  let deferredPrompt;
+  const installBtn = document.getElementById('installApp');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Impede que o navegador mostre o aviso padrão imediatamente
+    e.preventDefault();
+    deferredPrompt = e;
+    // Mostra o seu botão personalizado
+    installBtn.style.display = 'block';
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('Usuário aceitou a instalação');
+      }
+      deferredPrompt = null;
+      installBtn.style.display = 'none';
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+    console.log('App instalado com sucesso!');
+  });
+</script>
 </body>
 </html>
