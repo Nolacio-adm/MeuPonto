@@ -1,5 +1,5 @@
 {
-  "name": "Checkin Ponto PWA",
+  "name": "Meu Ponto",
   "short_name": "PontoApp",
   "description": "Aplicativo PWA para registro de ponto com fotos.",
   "start_url": "./index.html",
