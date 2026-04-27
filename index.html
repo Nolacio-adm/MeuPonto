@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Checkin Ponto PWA</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#007bff">
+  <style>
+    /* (O CSS permanece o mesmo da versão anterior para manter o design) */
+    :root { --bg-color: #ffffff; --text-color: #000000; --primary: #007bff; --success: #2ca50a; --warning: #ffd700; --danger: #d9534f; --gray: #6c757d; }
+    body.dark-mode { --bg-color: #121212; --text-color: #ffffff; --gray: #444; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s; }
+    header { background-color: var(--primary); padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; }
+    .container { padding: 15px; }
+    .hidden { display: none !important; }
+    .legend { background-color: var(--gray); color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
+    .dark-mode-btn { background: #f60; color: white; border: none; padding: 8px 12px; border-radius: 20px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+    .month-selector { display: flex; justify-content: space-between; align-items: center; margin: 20px 0; font-weight: bold; font-size: 18px; }
+    .month-selector button { background: none; border: none; font-size: 20px; color: var(--text-color); cursor: pointer; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+    .day-name { font-weight: bold; font-size: 12px; color: #888; margin-bottom: 5px; }
+    .day { padding: 15px 5px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+    .day.status-none { background-color: transparent; color: var(--text-color); }
+    .day.status-today { background-color: var(--primary); color: white; }
+    .day.status-partial { background-color: var(--warning); color: black; }
+    .day.status-full { background-color: var(--success); color: white; }
+    .grid-2x2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+    .marking-box { border: 1px solid var(--text-color); border-radius: 8px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; background: #fff;}
+    .marking-label { background-color: var(--success); color: white; padding: 5px 10px; border-radius: 15px; font-weight: bold; font-size: 11px; margin-bottom: 10px; width: 100%;}
+    .photo-preview { width: 100px; height: 100px; border-radius: 8px; object-fit: cover; border: 1px solid #ccc; cursor: pointer; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 30px; overflow: hidden;}
+    .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .btn-action { background-color: var(--success); color: white; border: none; padding: 12px; border-radius: 30px; width: 100%; font-weight: bold; font-size: 16px; margin-top: 20px; cursor: pointer; }
+    .btn-danger { background-color: var(--danger); margin-top: 40px; }
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: white; padding: 20px; border-radius: 10px; text-align: center; max-width: 90%; color: black; }
+    .modal-content img { max-width: 100%; border-radius: 8px; max-height: 60vh; }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+    .modal-btn { padding: 10px 15px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body class="dark-mode">
+
+  <header>
+    <h1 id="header-title">CALENDÁRIO</h1>
+    <span onclick="toggleInfo()" style="cursor:pointer; font-size:20px;">ℹ️</span>
+  </header>
+
+  <div id="view-calendar" class="container">
+    <div class="legend">
+      <strong>Memória: IndexedDB (Alta Capacidade)</strong>
+      <p>🔵 Azul: Hoje | 🟢 Verde: Completo | 🟡 Amarelo: Pendente</p>
+      <button class="dark-mode-btn" onclick="toggleTheme()">Alternar Tema</button>
+    </div>
+
+    <div class="month-selector">
+      <button onclick="changeMonth(-1)">&#9664;</button>
+      <span id="current-month-display"></span>
+      <button onclick="changeMonth(1)">&#9654;</button>
+    </div>
+
+    <div class="calendar-grid" id="calendar-days"></div>
+    <button class="btn-action btn-danger" onclick="clearData()">🗑️ Limpar Mês e Fotos</button>
+  </div>
+
+  <div id="view-checkin" class="container hidden">
+    <h2 style="text-align:center; margin-bottom: 10px;" id="checkin-date-display"></h2>
+    <div class="grid-2x2" id="marking-grid">
+      <div class="marking-box">
+        <div class="marking-label">ENTRADA</div>
+        <div class="photo-preview" onclick="handlePhotoClick('entrada')" id="preview-entrada">📷</div>
+      </div>
+      <div class="marking-box">
+        <div class="marking-label">ALMOÇO</div>
+        <div class="photo-preview" onclick="handlePhotoClick('almoco')" id="preview-almoco">📷</div>
+      </div>
+      <div class="marking-box">
+        <div class="marking-label">RETORNO</div>
+        <div class="photo-preview" onclick="handlePhotoClick('retorno')" id="preview-retorno">📷</div>
+      </div>
+      <div class="marking-box">
+        <div class="marking-label">SAÍDA</div>
+        <div class="photo-preview" onclick="handlePhotoClick('saida')" id="preview-saida">📷</div>
+      </div>
+    </div>
+    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none;" onchange="processPhoto(event)">
+    <button class="btn-action" onclick="goBack()">VOLTAR AO CALENDÁRIO</button>
+  </div>
+
+  <div id="image-modal" class="modal hidden">
+    <div class="modal-content">
+      <img id="modal-img-tag" src="">
+      <div class="modal-actions">
+        <button class="modal-btn" style="background:#ccc" onclick="closeModal()">Fechar</button>
+        <button class="modal-btn" style="background:var(--warning)" onclick="changeCurrentPhoto()">Alterar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="info-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Informações</h3>
+      <p>As fotos são salvas no banco de dados local (IndexedDB).</p>
+      <button class="modal-btn" style="background:#ccc" onclick="document.getElementById('info-modal').classList.add('hidden')">Fechar</button>
+    </div>
+  </div>
+
+  <script>
+    // --- CONFIGURAÇÃO DO INDEXED DB ---
+    const DB_NAME = 'PontoDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'fotos';
+    let db;
+
+    const initDB = () => {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (e) => {
+          db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME);
+          }
+        };
+        request.onsuccess = (e) => {
+          db = e.target.result;
+          resolve(db);
+        };
+        request.onerror = (e) => reject('Erro ao abrir DB');
+      });
+    };
+
+    // Funções de Banco de Dados
+    async function saveToDB(key, data) {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put(data, key);
+      return tx.complete;
+    }
+
+    async function getFromDB(key) {
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const request = tx.objectStore(STORE_NAME).get(key);
+        request.onsuccess = () => resolve(request.result);
+      });
+    }
+
+    async function getAllKeys() {
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const request = tx.objectStore(STORE_NAME).getAllKeys();
+        request.onsuccess = () => resolve(request.result);
+      });
+    }
+
+    async function deleteFromDB(key) {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(key);
+    }
+
+    // --- LÓGICA DO APP ---
+    let currentDate = new Date();
+    let selectedDateStr = null;
+    let activeSlot = null;
+
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await initDB();
+      renderCalendar();
+    });
+
+    async function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      document.getElementById('current-month-display').innerText = `${monthNames[month]} ${year}`;
+      
+      const grid = document.getElementById('calendar-days');
+      grid.innerHTML = '';
+      ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => grid.innerHTML += `<div class="day-name">${d}</div>`);
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      // Pegamos as chaves existentes no banco para colorir o calendário
+      const keys = await getAllKeys();
+
+      for(let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="day"></div>`;
+
+      for(let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        
+        // Conta quantas marcações existem para esse dia
+        const picsCount = keys.filter(k => k.startsWith(dateStr)).length;
+        
+        let status = 'status-none';
+        if (picsCount === 4) status = 'status-full';
+        else if (picsCount > 0) status = 'status-partial';
+        else if (dateStr === todayStr) status = 'status-today';
+
+        grid.innerHTML += `<div class="day ${status}" onclick="openCheckin('${dateStr}')">${d}</div>`;
+      }
+    }
+
+    async function openCheckin(dateStr) {
+      selectedDateStr = dateStr;
+      document.getElementById('checkin-date-display').innerText = dateStr.split('-').reverse().join('/');
+      document.getElementById('view-calendar').classList.add('hidden');
+      document.getElementById('view-checkin').classList.remove('hidden');
+      
+      const slots = ['entrada', 'almoco', 'retorno', 'saida'];
+      for (const slot of slots) {
+        const data = await getFromDB(`${selectedDateStr}_${slot}`);
+        const el = document.getElementById(`preview-${slot}`);
+        el.innerHTML = data ? `<img src="${data}">` : '📷';
+      }
+    }
+
+    function handlePhotoClick(slot) {
+      activeSlot = slot;
+      const currentImg = document.getElementById(`preview-${slot}`).querySelector('img');
+      if (currentImg) {
+        document.getElementById('modal-img-tag').src = currentImg.src;
+        document.getElementById('image-modal').classList.remove('hidden');
+      } else {
+        document.getElementById('camera-input').click();
+      }
+    }
+
+    async function processPhoto(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = async () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800; // Aumentei um pouco a qualidade já que temos mais espaço
+          const scale = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scale;
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          const base64 = canvas.toDataURL('image/jpeg', 0.7);
+          await saveToDB(`${selectedDateStr}_${activeSlot}`, base64);
+          openCheckin(selectedDateStr); // Refresh fotos
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function clearData() {
+      if(confirm('Isso apagará todas as fotos e marcações deste mês. Confirmar?')) {
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const prefix = `${year}-${month}`;
+        
+        const keys = await getAllKeys();
+        for (const key of keys) {
+          if (key.startsWith(prefix)) {
+            await deleteFromDB(key);
+          }
+        }
+        renderCalendar();
+        alert('Mês limpo com sucesso!');
+      }
+    }
+
+    function changeMonth(dir) { currentDate.setMonth(currentDate.getMonth() + dir); renderCalendar(); }
+    function goBack() { document.getElementById('view-checkin').classList.add('hidden'); document.getElementById('view-calendar').classList.remove('hidden'); renderCalendar(); }
+    function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+    function closeModal() { document.getElementById('image-modal').classList.add('hidden'); }
+    function changeCurrentPhoto() { closeModal(); document.getElementById('camera-input').click(); }
+    function toggleInfo() { document.getElementById('info-modal').classList.toggle('hidden'); }
+  </script>
+</body>
+</html>
