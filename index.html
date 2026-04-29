@@ -324,12 +324,16 @@
   let deferredPrompt;
   const installBtn = document.getElementById('installApp');
 
+  // Inicialmente, escondemos o botão (opcional, já que ele começa visível no HTML)
+  installBtn.style.display = 'none';
+
   window.addEventListener('beforeinstallprompt', (e) => {
-    // Impede que o navegador mostre o aviso padrão imediatamente
+    // Impede o banner automático do Chrome
     e.preventDefault();
+    // Guarda o evento para ser disparado depois
     deferredPrompt = e;
-    // Mostra o seu botão personalizado
-    installBtn.style.display = 'none';
+    // AGORA SIM: Mostra o botão porque o PWA está pronto para instalar
+    installBtn.style.display = 'block';
   });
 
   installBtn.addEventListener('click', async () => {
@@ -346,6 +350,7 @@
 
   window.addEventListener('appinstalled', () => {
     installBtn.style.display = 'none';
+    deferredPrompt = null;
     console.log('App instalado com sucesso!');
   });
 </script>
