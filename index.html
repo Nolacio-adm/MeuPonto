@@ -101,6 +101,7 @@
       <div class="modal-actions">
         <button class="modal-btn" style="background:#ccc" onclick="closeModal()">Fechar</button>
         <button class="modal-btn" style="background:var(--warning)" onclick="changeCurrentPhoto()">Alterar</button>
+        <button class="modal-btn" style="background:#007bff; color:white;" onclick="shareCurrentPhoto()">📤 Compartilhar</button>
       </div>
     </div>
   </div>
@@ -284,6 +285,40 @@
     function closeModal() { document.getElementById('image-modal').classList.add('hidden'); }
     function changeCurrentPhoto() { closeModal(); document.getElementById('camera-input').click(); }
     function toggleInfo() { document.getElementById('info-modal').classList.toggle('hidden'); }
+
+    async function shareCurrentPhoto() {
+    const imgElement = document.getElementById('modal-img-tag');
+    const base64Data = imgElement.src;
+
+    if (!base64Data || base64Data === window.location.href) {
+        alert("Nenhuma imagem para compartilhar.");
+        return;
+    }
+
+    try {
+        // Converte o Base64 para um arquivo real
+        const res = await fetch(base64Data);
+        const blob = await res.blob();
+        
+        // Cria um nome amigável para o arquivo (Ex: ponto_2026-04-29_entrada.jpg)
+        const fileName = `ponto_${selectedDateStr}_${activeSlot}.jpg`;
+        const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+        // Verifica se o sistema (Android/iOS) permite compartilhar arquivos
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+                files: [file],
+                title: 'Comprovante de Ponto',
+                text: `Segue comprovante de registro (${activeSlot}) do dia ${selectedDateStr.split('-').reverse().join('/')}.`
+            });
+        } else {
+            alert('Seu navegador não suporta o compartilhamento de arquivos. Tente salvar a imagem manualmente.');
+        }
+    } catch (err) {
+        console.error('Erro ao compartilhar:', err);
+        alert('Não foi possível abrir o compartilhamento.');
+    }
+}
   </script>
   <script>
   let deferredPrompt;
@@ -294,7 +329,7 @@
     e.preventDefault();
     deferredPrompt = e;
     // Mostra o seu botão personalizado
-    installBtn.style.display = 'block';
+    installBtn.style.display = 'none';
   });
 
   installBtn.addEventListener('click', async () => {
