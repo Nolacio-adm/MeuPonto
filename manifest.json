@@ -1,6 +1,6 @@
 {
   "name": "Meu Ponto",
-  "short_name": "PontoApp",
+  "short_name": "Meu Ponto",
   "description": "Aplicativo PWA para registro de ponto com fotos.",
   "start_url": "./index.html",
   "display": "standalone",
