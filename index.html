@@ -12,7 +12,7 @@
     body.dark-mode { --bg-color: #121212; --text-color: #ffffff; --gray: #444; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s; }
-    header { background-color: var(--primary); padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; }
+    header { background-color: #007002; padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; }
     .container { padding: 15px; }
     .hidden { display: none !important; }
     .legend { background-color: var(--gray); color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
@@ -44,6 +44,9 @@
 
   <header>
     <h1 id="header-title">CALENDÁRIO</h1>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLScqxrimTKJuWpMSmFEBMLdsTiPapmK-hWHFilkpOa7mIh3r-Q/viewform?usp=sharing&ouid=108190241938010847218" target="_blank" 
+   style="background-color: #4285F4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+   Responder Pesquisa</a>
     <span onclick="toggleInfo()" style="cursor:pointer; font-size:20px;">ℹ️</span>
   </header>
 
@@ -105,7 +108,7 @@
       </div>
     </div>
   </div>
-
+  
   <div id="info-modal" class="modal hidden">
     <div class="modal-content">
       <h3>Informações</h3>
